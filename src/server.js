@@ -65,42 +65,35 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/mercadotec
  * 
  * @returns {Promise<void>}
  */
-mongoose.connect(MONGO_URI)
-    .then(() => {
-        // Conexión exitosa a MongoDB
+const connectDB = async () => {
+    try {
+        if (mongoose.connection.readyState === 1) {
+            return;
+        }
+        await mongoose.connect(MONGO_URI, {
+            serverSelectionTimeoutMS: 5000 // Timeout más corto para fallar rápido si no hay conexión
+        });
         console.log('Connected to MongoDB');
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+        // No salir del proceso en Vercel, permitir reintentos
+    }
+};
 
-        /**
-         * Iniciar servidor Express
-         * 
-         * @param {number} PORT - Puerto en el que escuchar
-         * @param {Function} callback - Se ejecuta cuando el servidor está listo
-         * 
-         * El servidor ahora está escuchando en http://localhost:PORT
-         * Listo para recibir peticiones HTTP
-         */
+// Conectar a la BD
+connectDB();
+
+// Para Vercel: Exportar la app
+module.exports = app;
+
+// Para desarrollo local: Iniciar servidor si no estamos en Vercel
+if (process.env.NODE_ENV !== 'production') {
+    mongoose.connection.once('open', () => {
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
-    })
-    .catch((err) => {
-        /**
-         * Error de conexión a MongoDB
-         * 
-         * Causas comunes:
-         * - MONGO_URI incorrecto
-         * - MongoDB no está corriendo (si es local)
-         * - Problemas de red (si es Atlas)
-         * - Credenciales inválidas
-         * - IP no autorizada en MongoDB Atlas
-         * 
-         * El servidor NO se inicia si MongoDB falla
-         */
-        console.error('MongoDB connection error:', err);
-
-        // No continuar si no hay BD
-        // En producción, podrías querer reintentar o notificar
     });
+}
 
 /**
  * Notas de producción:
