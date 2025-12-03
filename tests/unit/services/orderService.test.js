@@ -18,12 +18,12 @@
  * 5. Verificar descuento de stock después de crear orden
  */
 
-const orderService = require('../../src/services/orderService');
-const orderRepository = require('../../src/repositories/orderRepository');
-const productRepository = require('../../src/repositories/productRepository');
+const orderService = require('../../../src/services/orderService');
+const orderRepository = require('../../../src/repositories/orderRepository');
+const productRepository = require('../../../src/repositories/productRepository');
 
-jest.mock('../../src/repositories/orderRepository');
-jest.mock('../../src/repositories/productRepository');
+jest.mock('../../../src/repositories/orderRepository');
+jest.mock('../../../src/repositories/productRepository');
 
 describe('OrderService - Tests Unitarios', () => {
     beforeEach(() => {

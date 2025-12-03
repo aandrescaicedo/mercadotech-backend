@@ -15,10 +15,10 @@
  * 3. Obtener tiendas por estado
  */
 
-const storeService = require('../../src/services/storeService');
-const storeRepository = require('../../src/repositories/storeRepository');
+const storeService = require('../../../src/services/storeService');
+const storeRepository = require('../../../src/repositories/storeRepository');
 
-jest.mock('../../src/repositories/storeRepository');
+jest.mock('../../../src/repositories/storeRepository');
 
 describe('Store Service - Tests Unitarios', () => {
     beforeEach(() => {

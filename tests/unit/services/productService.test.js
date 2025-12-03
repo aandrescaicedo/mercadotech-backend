@@ -19,11 +19,11 @@
  * 7. Eliminar producto existente
  */
 
-const productService = require('../../src/services/productService');
-const productRepository = require('../../src/repositories/productRepository');
+const productService = require('../../../src/services/productService');
+const productRepository = require('../../../src/repositories/productRepository');
 
 // Mock del repositorio
-jest.mock('../../src/repositories/productRepository');
+jest.mock('../../../src/repositories/productRepository');
 
 describe('ProductService - Tests Unitarios', () => {
     beforeEach(() => {
@@ -32,13 +32,6 @@ describe('ProductService - Tests Unitarios', () => {
 
     /**
      * Test 1: Obtener Todos los Productos Sin Filtros
-     * 
-     * Qué prueba:
-     * - El servicio puede obtener lista completa de productos
-     * - Retorna array de productos
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.findAll: Retorna array de productos
      */
     test('debe obtener todos los productos sin filtros', async () => {
         // Arrange
@@ -72,13 +65,6 @@ describe('ProductService - Tests Unitarios', () => {
 
     /**
      * Test 2: Obtener Productos con Filtros
-     * 
-     * Qué prueba:
-     * - El servicio aplica filtros correctamente (search, category, price range)
-     * - Los filtros se pasan al repositorio
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.findAll: Retorna productos filtrados
      */
     test('debe obtener productos con filtros aplicados', async () => {
         // Arrange
@@ -111,13 +97,6 @@ describe('ProductService - Tests Unitarios', () => {
 
     /**
      * Test 3: Obtener Producto por ID Existente
-     * 
-     * Qué prueba:
-     * - El servicio puede obtener un producto específico por ID
-     * - Retorna el producto completo
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.findById: Retorna producto
      */
     test('debe obtener producto por ID existente', async () => {
         // Arrange
@@ -142,13 +121,6 @@ describe('ProductService - Tests Unitarios', () => {
 
     /**
      * Test 4: Obtener Producto por ID No Existente
-     * 
-     * Qué prueba:
-     * - El servicio lanza error cuando el producto no existe
-     * - Mensaje de error apropiado
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.findById: Retorna null
      */
     test('debe lanzar error si producto no existe', async () => {
         // Arrange
@@ -165,13 +137,6 @@ describe('ProductService - Tests Unitarios', () => {
 
     /**
      * Test 5: Crear Producto Válido
-     * 
-     * Qué prueba:
-     * - El servicio puede crear un nuevo producto
-     * - Se retorna el producto creado
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.create: Simula creación en DB
      */
     test('debe crear un nuevo producto válido', async () => {
         // Arrange
@@ -203,14 +168,6 @@ describe('ProductService - Tests Unitarios', () => {
 
     /**
      * Test 6: Actualizar Producto Existente
-     * 
-     * Qué prueba:
-     * - El servicio puede actualizar un producto existente
-     * - Solo los campos proporcionados se actualizan
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.findById: Retorna producto existente
-     * - productRepository.update: Simula actualización
      */
     test('debe actualizar producto existente', async () => {
         // Arrange
@@ -247,14 +204,6 @@ describe('ProductService - Tests Unitarios', () => {
 
     /**
      * Test 7: Eliminar Producto
-     * 
-     * Qué prueba:
-     * - El servicio puede eliminar un producto existente
-     * - Retorna confirmación de eliminación
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.findById: Verifica que existe
-     * - productRepository.delete: Simula eliminación
      */
     test('debe eliminar producto existente', async () => {
         // Arrange
