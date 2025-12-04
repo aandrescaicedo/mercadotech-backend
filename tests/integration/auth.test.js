@@ -145,7 +145,7 @@ describe('Auth API - Tests de Integración', () => {
 
         // Act
         const response = await request(app)
-            .post('/api/v1/auth/google')
+            .post('/api/v1/auth/google-login')
             .send(googleData)
             .expect('Content-Type', /json/)
             .expect(200);

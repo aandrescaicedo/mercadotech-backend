@@ -17,25 +17,35 @@ const app = require('../../src/app');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
-let mongoServer, authToken, userId;
+let mongoServer, authToken, userId, storeId, categoryId;
 
 beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     await mongoose.connect(mongoServer.getUri());
 
-    // Crear usuario y obtener token para tests autenticados
+    // 1. Crear usuario con rol STORE
     const userData = { email: 'store@test.com', password: 'password123', role: 'STORE' };
     const authResponse = await request(app).post('/api/v1/auth/register').send(userData);
     authToken = authResponse.body.token;
     userId = authResponse.body.user.id;
+
+    // 2. Crear tienda
+    const storeRes = await request(app).post('/api/v1/stores')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'Test Store', description: 'Test Description' });
+    storeId = storeRes.body._id;
+
+    // 3. Aprobar tienda manualmente
+    const Store = require('../../src/models/Store');
+    await Store.findByIdAndUpdate(storeId, { status: 'APPROVED' });
+
+    // 4. Crear categoría
+    const Category = require('../../src/models/Category');
+    const categoryRes = await Category.create({ name: 'Test Category', description: 'Test Description' });
+    categoryId = categoryRes._id;
 });
 
-afterEach(async () => {
-    const collections = mongoose.connection.collections;
-    for (const key in collections) {
-        if (key !== 'users') await collections[key].deleteMany();
-    }
-});
+
 
 afterAll(async () => {
     await mongoose.connection.dropDatabase();
@@ -58,7 +68,8 @@ describe('Products API - Tests de Integración', () => {
             description: 'Gaming laptop',
             price: 1500,
             stock: 10,
-            category: '507f1f77bcf86cd799439011'
+            category: categoryId,
+            store: storeId
         };
 
         const response = await request(app)
@@ -75,7 +86,7 @@ describe('Products API - Tests de Integración', () => {
         // Crear producto primero
         const product = (await request(app).post('/api/v1/products')
             .set('Authorization', `Bearer ${authToken}`)
-            .send({ name: 'Mouse', price: 50, stock: 20, category: '507f1f77bcf86cd799439011' })).body;
+            .send({ name: 'Mouse', price: 50, stock: 20, category: categoryId, store: storeId, description: 'Test mouse' })).body;
 
         const updateData = { price: 45, stock: 25 };
         const response = await request(app)
@@ -91,7 +102,7 @@ describe('Products API - Tests de Integración', () => {
     test('DELETE /api/v1/products/:id debe eliminar producto', async () => {
         const product = (await request(app).post('/api/v1/products')
             .set('Authorization', `Bearer ${authToken}`)
-            .send({ name: 'Teclado', price: 80, stock: 15, category: '507f1f77bcf86cd799439011' })).body;
+            .send({ name: 'Teclado', price: 80, stock: 15, category: categoryId, store: storeId, description: 'Test keyboard' })).body;
 
         await request(app)
             .delete(`/api/v1/products/${product._id}`)

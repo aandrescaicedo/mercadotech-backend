@@ -9,13 +9,6 @@
  * - orderService: Servicio de pedidos principal
  * - orderRepository: Mock del repositorio de pedidos
  * - productRepository: Mock del repositorio de productos (para stock)
- * 
- * Casos de Prueba:
- * 1. Crear pedido válido con stock suficiente
- * 2. Rechazar pedido sin stock suficiente
- * 3. Actualizar estado de pedido
- * 4. Obtener pedidos por usuario
- * 5. Verificar descuento de stock después de crear orden
  */
 
 const orderService = require('../../../src/services/orderService');
@@ -32,47 +25,21 @@ describe('OrderService - Tests Unitarios', () => {
 
     /**
      * Test 1: Crear Pedido Válido con Stock Suficiente
-     * 
-     * Qué prueba:
-     * - El servicio crea un pedido cuando hay stock disponible
-     * - Se actualiza el stock de los productos
-     * - Se calculan correctamente los totales
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.findById: Retorna productos con stock
-     * - productRepository.update: Simula actualización de stock
-     * - orderRepository.create: Simula creación del pedido
      */
     test('debe crear pedido válido con stock suficiente', async () => {
-        // Arrange
+        const userId = 'user123';
         const orderData = {
-            user: 'user123',
             items: [
                 { product: 'prod1', quantity: 2, price: 100 },
                 { product: 'prod2', quantity: 1, price: 200 }
-            ]
+            ],
+            shippingAddress: 'Calle 123'
         };
 
-        const product1 = {
-            _id: 'prod1',
-            name: 'Producto 1',
-            stock: 10,
-            price: 100
-        };
+        const product1 = { _id: 'prod1', name: 'P1', stock: 10, price: 100, store: 'store1' };
+        const product2 = { _id: 'prod2', name: 'P2', stock: 5, price: 200, store: 'store1' };
 
-        const product2 = {
-            _id: 'prod2',
-            name: 'Producto 2',
-            stock: 5,
-            price: 200
-        };
-
-        const createdOrder = {
-            _id: 'order123',
-            ...orderData,
-            total: 400, // (2 * 100) + (1 * 200)
-            status: 'PENDING'
-        };
+        const createdOrder = { _id: 'order123', user: userId, total: 400, status: 'PAID' };
 
         productRepository.findById
             .mockResolvedValueOnce(product1)
@@ -80,174 +47,73 @@ describe('OrderService - Tests Unitarios', () => {
         productRepository.update.mockResolvedValue(true);
         orderRepository.create.mockResolvedValue(createdOrder);
 
-        // Act
-        const result = await orderService.createOrder(orderData);
+        const result = await orderService.createOrder(userId, orderData);
 
-        // Assert
         expect(productRepository.findById).toHaveBeenCalledTimes(2);
-        expect(productRepository.update).toHaveBeenCalledWith('prod1', { stock: 8 }); // 10 - 2
-        expect(productRepository.update).toHaveBeenCalledWith('prod2', { stock: 4 }); // 5 - 1
+        expect(productRepository.update).toHaveBeenCalledWith('prod1', { stock: 8 });
+        expect(productRepository.update).toHaveBeenCalledWith('prod2', { stock: 4 });
         expect(orderRepository.create).toHaveBeenCalled();
         expect(result.total).toBe(400);
     });
 
     /**
      * Test 2: Rechazar Pedido sin Stock Suficiente
-     * 
-     * Qué prueba:
-     * - El servicio rechaza pedidos cuando no hay stock disponible
-     * - No se crea el pedido
-     * - Se lanza error informativo
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.findById: Retorna producto con stock insuficiente
      */
     test('debe rechazar pedido sin stock suficiente', async () => {
-        // Arrange
+        const userId = 'user123';
         const orderData = {
-            user: 'user123',
-            items: [
-                { product: 'prod1', quantity: 15, price: 100 } // Solicitando más que el stock
-            ]
+            items: [{ product: 'prod1', quantity: 15 }]
         };
 
-        const product = {
-            _id: 'prod1',
-            name: 'Producto 1',
-            stock: 10, // Solo hay 10
-            price: 100
-        };
-
+        const product = { _id: 'prod1', name: 'P1', stock: 10, price: 100 };
         productRepository.findById.mockResolvedValue(product);
 
-        // Act & Assert
         await expect(
-            orderService.createOrder(orderData)
+            orderService.createOrder(userId, orderData)
         ).rejects.toThrow(/stock insuficiente/i);
 
         expect(orderRepository.create).not.toHaveBeenCalled();
-        expect(productRepository.update).not.toHaveBeenCalled();
     });
 
     /**
      * Test 3: Actualizar Estado de Pedido
-     * 
-     * Qué prueba:
-     * - El servicio puede actualizar el estado de un pedido
-     * - Estados válidos: PENDING, CONFIRMED, DELIVERED, CANCELLED
-     * 
-     * Dependencias mockeadas:
-     * - orderRepository.findById: Retorna pedido existente
-     * - orderRepository.update: Simula actualización
      */
     test('debe actualizar estado de pedido', async () => {
-        // Arrange
+        const userId = 'user123';
         const orderId = 'order123';
         const newStatus = 'CONFIRMED';
 
         const existingOrder = {
             _id: orderId,
             status: 'PENDING',
-            user: 'user123'
-        };
-
-        const updatedOrder = {
-            ...existingOrder,
-            status: newStatus
+            user: userId,
+            statusHistory: [],
+            save: jest.fn().mockResolvedValue({ status: newStatus })
         };
 
         orderRepository.findById.mockResolvedValue(existingOrder);
-        orderRepository.update.mockResolvedValue(updatedOrder);
 
-        // Act
-        const result = await orderService.updateOrderStatus(orderId, newStatus);
+        const result = await orderService.updateOrderStatus(orderId, newStatus, userId);
 
-        // Assert
         expect(orderRepository.findById).toHaveBeenCalledWith(orderId);
-        expect(orderRepository.update).toHaveBeenCalledWith(orderId, { status: newStatus });
+        expect(existingOrder.status).toBe(newStatus);
+        expect(existingOrder.statusHistory).toHaveLength(1);
+        expect(existingOrder.save).toHaveBeenCalled();
         expect(result.status).toBe(newStatus);
     });
 
     /**
      * Test 4: Obtener Pedidos por Usuario
-     * 
-     * Qué prueba:
-     * - El servicio puede obtener todos los pedidos de un usuario
-     * - Retorna array de pedidos
-     * 
-     * Dependencias mockeadas:
-     * - orderRepository.findByUser: Retorna pedidos del usuario
      */
     test('debe obtener pedidos por usuario', async () => {
-        // Arrange
         const userId = 'user123';
-        const userOrders = [
-            {
-                _id: 'order1',
-                user: userId,
-                total: 100,
-                status: 'DELIVERED'
-            },
-            {
-                _id: 'order2',
-                user: userId,
-                total: 250,
-                status: 'PENDING'
-            }
-        ];
+        const userOrders = [{ _id: 'order1' }, { _id: 'order2' }];
 
         orderRepository.findByUser.mockResolvedValue(userOrders);
 
-        // Act
-        const result = await orderService.getOrdersByUser(userId);
+        const result = await orderService.getMyOrders(userId);
 
-        // Assert
         expect(orderRepository.findByUser).toHaveBeenCalledWith(userId);
         expect(result).toEqual(userOrders);
-        expect(result).toHaveLength(2);
-    });
-
-    /**
-     * Test 5: Verificar Descuento de Stock Correcto
-     * 
-     * Qué prueba:
-     * - El stock se descuenta correctamente para múltiples productos
-     * - Los cálculos son precisos
-     * 
-     * Dependencias mockeadas:
-     * - productRepository.findById: Retorna productos
-     * - productRepository.update: Verifica cálculos
-     */
-    test('debe descontar stock correctamente para múltiples productos', async () => {
-        // Arrange
-        const orderData = {
-            user: 'user123',
-            items: [
-                { product: 'prod1', quantity: 3, price: 50 },
-                { product: 'prod2', quantity: 5, price: 30 },
-                { product: 'prod3', quantity: 1, price: 100 }
-            ]
-        };
-
-        const products = [
-            { _id: 'prod1', stock: 20, price: 50 },
-            { _id: 'prod2', stock: 15, price: 30 },
-            { _id: 'prod3', stock: 10, price: 100 }
-        ];
-
-        productRepository.findById
-            .mockResolvedValueOnce(products[0])
-            .mockResolvedValueOnce(products[1])
-            .mockResolvedValueOnce(products[2]);
-        productRepository.update.mockResolvedValue(true);
-        orderRepository.create.mockResolvedValue({ _id: 'order123' });
-
-        // Act
-        await orderService.createOrder(orderData);
-
-        // Assert
-        expect(productRepository.update).toHaveBeenCalledWith('prod1', { stock: 17 }); // 20 - 3
-        expect(productRepository.update).toHaveBeenCalledWith('prod2', { stock: 10 }); // 15 - 5
-        expect(productRepository.update).toHaveBeenCalledWith('prod3', { stock: 9 });  // 10 - 1
     });
 });

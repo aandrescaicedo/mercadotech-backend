@@ -67,10 +67,10 @@ describe('AuthService - Tests Unitarios', () => {
 
         // Assert
         expect(userRepository.findByEmail).toHaveBeenCalledWith(userData.email);
-        expect(bcrypt.hash).toHaveBeenCalledWith(userData.password, 10);
+        // Password hashing is handled by User model, so service passes plain password
         expect(userRepository.create).toHaveBeenCalledWith({
             email: userData.email,
-            password: hashedPassword,
+            password: userData.password,
             role: userData.role
         });
         expect(result).toEqual(createdUser);

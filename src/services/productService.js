@@ -22,6 +22,15 @@ class ProductService {
         return await productRepository.findAll(filters);
     }
 
+    // New method to retrieve a product by its ID
+    async getProductById(productId) {
+        const product = await productRepository.findById(productId);
+        if (!product) {
+            throw new Error('Producto no encontrado');
+        }
+        return product;
+    }
+
     async updateProduct(userId, productId, updateData) {
         const product = await productRepository.findById(productId);
         if (!product) {
